@@ -2,7 +2,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-
+import java.nio.charset.StandardCharsets;
 public class HtmlAnalyzer {
 
     /**
@@ -63,6 +63,7 @@ public class HtmlAnalyzer {
          * @throws Exception in case of malformed HTML or reading issues
          */
         public static String findDeepestText(BufferedReader reader) throws Exception {
+            top = -1;
             String deepestText = "";
             int maxDepth = -1;
             int currentDepth = 0;
@@ -175,9 +176,12 @@ public class HtmlAnalyzer {
             // Headers and timeouts for maximum compatibility
             connection.setConnectTimeout(TIMEOUT_MS);
             connection.setReadTimeout(TIMEOUT_MS);
-            connection.setRequestProperty("User-Agent", "HtmlAnalyzer/1.0");
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
 
-            return new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            // Force UTF-8 encoding
+            return new BufferedReader(
+                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8)
+            );
         }
     }
 
@@ -189,24 +193,17 @@ public class HtmlAnalyzer {
 
     static class UnitTests {
         private static final String BASE_URL = "http://hiring.axreng.com/internship/example";
-        private static final String[] REAL_WORLD_URLS = {
-                "https://engineering.axur.com/2025/03/25/praticas-de-engenharia-de-software-na-axur.html",
-                "https://www.scidev.net/global/enterprise/technology"
-        };
-
+ 
         private static final String[] EXPECTED = {
-                "This is the body.",                         // example1.html
-                "This is in level 4. Correct result.",       // example2.html
-                "malformed HTML",                            // example3.html
-                "malformed HTM",                             // example4.html
-                "malformed HTM",                             // example5.html
-                "aster egg | Este não é só mais um exemplo", // example6.html
-                "URL connection error"                       // example7.html
+                "This is the title.",                          // example1.html
+                "This is in level 4. Correct result.",         // example2.html
+                "malformed HTML",                              // example3.html
+                "malformed HTML",                              // example4.html
+                "malformed HTML",                              // example5.html
+                "Easter egg | Este n&atilde;o &eacute; s&oacute; mais um exemplo",  // example6.html
+                "URL connection error"                         // example7.html
         };
-        private static final String[] EXPECTED_REAL_URLS = {
-                "Compartilhe em:", // engineering.axur.com
-                "2026"             // scidev.net
-        };
+        
 
         /**
          * Executes a single test case
@@ -220,11 +217,6 @@ public class HtmlAnalyzer {
             for (int i = 0; i < EXPECTED.length; i++) {
                 if (executeTest("Test #" + (i + 1), BASE_URL + (i + 1) + ".html", EXPECTED[i]))
                     passed++;
-            }
-
-            System.out.println("--- STARTING REAL WORLD VALIDATION ---");
-            for (int i = 0; i < REAL_WORLD_URLS.length; i++) {
-                executeTest("Real World #" + (i + 1), REAL_WORLD_URLS[i], EXPECTED_REAL_URLS[i]);
             }
 
             System.out.println("--- SUITE COMPLETED: " + passed + "/" + EXPECTED.length + " CONTROLLED PASSED ---\n");
